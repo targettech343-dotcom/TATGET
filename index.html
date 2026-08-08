@@ -82,9 +82,11 @@
 
     <div id="cart-overlay" class="cart-overlay" onclick="toggleCart()"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // رابط API الخاص بك في SheetDB
-        const SHEETDB_API_URL = "https://sheetdb.io/api/v1/5gxkyrsbgig10"; 
+        const SUPABASE_URL = "https://dvthknsujpxbosflgtuk.supabase.co";
+        const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_a8sn8qU9u8Q0OQ0utLk9Nw_5esNM67u";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const EMPLOYEES = {
     sondos: "201114402594",
     menna: "201126951506",
@@ -96,8 +98,6 @@ const emp = new URLSearchParams(window.location.search).get("emp");
 
 const MY_WHATSAPP_NUMBER =
     EMPLOYEES[emp] || "201011311295";
-    alert("emp = " + emp);
-alert("number = " + MY_WHATSAPP_NUMBER);
         let cart = [];
         let allProducts = [];
 
@@ -128,20 +128,24 @@ alert("number = " + MY_WHATSAPP_NUMBER);
             }
         }
 
-        function fetchProducts() {
-            fetch(SHEETDB_API_URL)
-                .then(response => response.json())
-                .then(products => {
-                    allProducts = products;
-                    displayProducts(allProducts);
-                })
-                .catch(error => {
-                    console.error("خطأ في جلب المنتجات:", error);
-                    document.getElementById('products-container').innerHTML = `
-                        <p style="text-align: center; grid-column: 1/-1; color: red;">
-                            عذراً، تعذر تحميل المنتجات. تحقق من الاتصال أو إعدادات SheetDB.
-                        </p>`;
-                });
+        async function fetchProducts() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('id, created_at, title, price, category, image')
+                    .order('id', { ascending: false });
+
+                if (error) throw error;
+
+                allProducts = data || [];
+                displayProducts(allProducts);
+            } catch (error) {
+                console.error("خطأ في جلب المنتجات من Supabase:", error);
+                document.getElementById('products-container').innerHTML = `
+                    <p style="text-align: center; grid-column: 1/-1; color: red;">
+                        عذراً، تعذر تحميل المنتجات من قاعدة البيانات.
+                    </p>`;
+            }
         }
 
         function displayProducts(products) {
